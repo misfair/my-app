@@ -46,11 +46,22 @@ jobs:
             # Pull the latest Docker image
             docker pull ${{ secrets.AWS_ECR_REGISTRY }}/${{ secrets.AWS_ECR_REPOSITORY }}
 
-            # Stop and remove any container running on port 5000
+            # Find and stop any container using port 5000
             CONTAINER_ID=$(docker ps -q --filter "ancestor=${{ secrets.AWS_ECR_REGISTRY }}/${{ secrets.AWS_ECR_REPOSITORY }}" --filter "status=running")
             if [ ! -z "$CONTAINER_ID" ]; then
+              echo "Stopping and removing container $CONTAINER_ID"
               docker stop "$CONTAINER_ID"
               docker rm "$CONTAINER_ID"
+            else
+              echo "No running container found for the image."
+            fi
+
+            # Check for any container using port 5000 and stop it
+            PORT_CONTAINER=$(docker ps -q --filter "publish=5000")
+            if [ ! -z "$PORT_CONTAINER" ]; then
+              echo "Stopping container $PORT_CONTAINER bound to port 5000"
+              docker stop "$PORT_CONTAINER"
+              docker rm "$PORT_CONTAINER"
             fi
 
             # Start a new container with the latest image
